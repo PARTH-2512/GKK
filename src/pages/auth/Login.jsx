@@ -102,6 +102,10 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-stone-500 mt-4">
+          <Link to="/forgot-password" className="text-stone-400 hover:text-primary hover:underline">Forgot Password?</Link>
+        </p>
+
+        <p className="text-center text-sm text-stone-500 mt-2">
           Don't have an account?{' '}
           <Link to="/signup" className="text-primary font-medium hover:underline">Sign Up</Link>
         </p>

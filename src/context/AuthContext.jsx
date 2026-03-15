@@ -33,11 +33,17 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    // Listen only for SIGNED_OUT to clear state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Listen for auth events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setProfile(null)
+      }
+      if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setUser(session.user)
+      }
+      if (event === 'PASSWORD_RECOVERY') {
+        // User arrived via password reset link — session is set, redirect handled by ResetPassword page
       }
     })
 

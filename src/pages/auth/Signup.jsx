@@ -17,6 +17,17 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (submitting) return
+
+    // Client-side validation
+    if (form.name.trim().length < 2) {
+      toast.error('Name must be at least 2 characters')
+      return
+    }
+    if (form.phone && !/^[\d\s+\-()]{10,15}$/.test(form.phone.trim())) {
+      toast.error('Enter a valid phone number (10–15 digits)')
+      return
+    }
+
     setSubmitting(true)
 
     // Step 1: Create auth user

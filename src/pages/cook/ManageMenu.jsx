@@ -104,7 +104,12 @@ export default function ManageMenu() {
           contentType: imageFile.type,
         })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        if (uploadError.message?.includes('row-level security') || uploadError.statusCode === 403) {
+          throw new Error('Image upload blocked by storage policy. Please ask admin to run the RLS setup SQL and ensure the food-images bucket is set to Public.')
+        }
+        throw uploadError
+      }
 
       const { data } = supabase.storage
         .from('food-images')
@@ -230,7 +235,7 @@ export default function ManageMenu() {
             <div key={food.id} className={`glass-card p-0 overflow-hidden ${!food.is_available ? 'opacity-60' : ''}`}>
               <div className="h-36 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
                 {food.image_url
-                  ? <img src={food.image_url} alt={food.name} className="w-full h-full object-cover" />
+                  ? <img src={food.image_url} alt={food.name} className="w-full h-full object-cover" onError={e => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-4xl">🍽️</span>' }} />
                   : <span className="text-4xl">🍽️</span>
                 }
                 {!food.is_available && (

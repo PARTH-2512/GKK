@@ -34,6 +34,7 @@ export default function FoodCard({ food, kitchenId, kitchenName, isPopular }) {
               src={food.image_url}
               alt={food.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={e => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-5xl">🍽️</div>' }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>

@@ -21,6 +21,7 @@ export default function Cart() {
 
   const handlePlaceOrder = async () => {
     if (!address.trim()) return toast.error('Please enter delivery address')
+    if (address.trim().length < 10) return toast.error('Please enter a complete delivery address (at least 10 characters)')
     if (items.length === 0) return toast.error('Cart is empty')
     setLoading(true)
 

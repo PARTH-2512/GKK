@@ -13,8 +13,13 @@ DROP POLICY IF EXISTS "users_update_own" ON public.users;
 DROP POLICY IF EXISTS "users_select_all_authenticated" ON public.users;
 
 -- SELECT: users can read their own row; admins/cooks can read all (for order display)
+-- SELECT: users can read their own row; admins can read all; other authenticated users can read basic info
 CREATE POLICY "users_select_own" ON public.users
-  FOR SELECT USING (auth.uid() = id OR auth.role() = 'authenticated');
+  FOR SELECT USING (
+    auth.uid() = id
+    OR EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'admin')
+    OR auth.role() = 'authenticated'
+  );
 
 -- INSERT: only the authenticated user can insert their own row
 CREATE POLICY "users_insert_own" ON public.users
@@ -173,31 +178,38 @@ CREATE POLICY "admin_logs_insert_admin" ON public.admin_logs
 
 -- ============================================================
 -- STORAGE POLICIES — food-images bucket
--- Run this in Supabase SQL Editor to allow anon uploads
+-- Run this in Supabase SQL Editor
 -- ============================================================
+
+-- Drop existing policies first (makes script idempotent / safe to re-run)
+DROP POLICY IF EXISTS "storage_food_images_select" ON storage.objects;
+DROP POLICY IF EXISTS "storage_food_images_insert" ON storage.objects;
+DROP POLICY IF EXISTS "storage_food_images_update" ON storage.objects;
+DROP POLICY IF EXISTS "storage_food_images_delete" ON storage.objects;
 
 -- Allow anyone to read/view images (public bucket reads)
 CREATE POLICY "storage_food_images_select"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'food-images');
 
--- Allow authenticated users to upload images
+-- Allow any authenticated user to upload images
 CREATE POLICY "storage_food_images_insert"
   ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'food-images' AND auth.role() = 'authenticated');
 
--- Allow authenticated users to update their uploads
+-- Only the uploader can update their own images
 CREATE POLICY "storage_food_images_update"
   ON storage.objects FOR UPDATE
-  USING (bucket_id = 'food-images' AND auth.role() = 'authenticated');
+  USING (bucket_id = 'food-images' AND auth.uid() = owner);
 
--- Allow authenticated users to delete their uploads
+-- Only the uploader can delete their own images
 CREATE POLICY "storage_food_images_delete"
   ON storage.objects FOR DELETE
-  USING (bucket_id = 'food-images' AND auth.role() = 'authenticated');
+  USING (bucket_id = 'food-images' AND auth.uid() = owner);
 
 -- ============================================================
--- IMPORTANT: Also set the bucket to PUBLIC in Supabase Dashboard:
--- Storage → food-images → Edit bucket → Enable "Public bucket"
--- This allows getPublicUrl() to return accessible URLs
+-- IMPORTANT — after running this SQL you must also:
+--   1. Go to Supabase Dashboard → Storage → food-images
+--   2. Click "Edit bucket" → Enable "Public bucket"
+--   This allows getPublicUrl() to return accessible URLs.
 -- ============================================================

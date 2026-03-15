@@ -1,10 +1,12 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
 // Auth
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
 // Customer
 import Home from './pages/customer/Home'
@@ -28,6 +30,9 @@ import ManageFoods from './pages/admin/ManageFoods'
 import AdminLogs from './pages/admin/AdminLogs'
 import AdminOrders from './pages/admin/AdminOrders'
 
+// Misc
+import NotFound from './pages/NotFound'
+
 export default function App() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 50%, #FFE4E6 100%)' }}>
@@ -36,6 +41,8 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Home />} />
         <Route path="/kitchen/:id" element={<KitchenDetail />} />
 
@@ -59,7 +66,7 @@ export default function App() {
         <Route path="/admin/orders" element={<ProtectedRoute role="admin"><AdminOrders /></ProtectedRoute>} />
         <Route path="/admin/logs" element={<ProtectedRoute role="admin"><AdminLogs /></ProtectedRoute>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   )
