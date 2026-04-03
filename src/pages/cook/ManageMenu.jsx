@@ -90,13 +90,24 @@ export default function ManageMenu() {
   }
 
   const uploadImage = async () => {
-    if (!imageFile) return form.image_url || null
+    if (!imageFile) {
+      // No new file chosen; keep existing image_url (edit path) or null (new entry)
+      return form.image_url || null
+    }
 
     setUploading(true)
     try {
-      const filePath = `foods/${Date.now()}-${imageFile.name}`
+      const sanitizedFileName = `${Date.now()}-${imageFile.name}`.replace(/\s+/g, '_')
+      const filePath = `foods/${sanitizedFileName}`
 
-      const { error: uploadError } = await supabase.storage
+      console.log('[ManageMenu] uploadImage start', {
+        filePath,
+        size: imageFile.size,
+        type: imageFile.type,
+        bucket: 'food-images',
+      })
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('food-images')
         .upload(filePath, imageFile, {
           cacheControl: '3600',
@@ -105,17 +116,37 @@ export default function ManageMenu() {
         })
 
       if (uploadError) {
-        if (uploadError.message?.includes('row-level security') || uploadError.statusCode === 403) {
-          throw new Error('Image upload blocked by storage policy. Please ask admin to run the RLS setup SQL and ensure the food-images bucket is set to Public.')
+        console.error('[ManageMenu] Supabase storage upload error', uploadError)
+        if (uploadError.message?.toLowerCase().includes('row-level security') || uploadError.status === 403 || uploadError.statusCode === 403) {
+          const rlsMessage = 'Supabase Storage upload blocked (403/RLS). Confirm storage policy and RLS setup. If bucket is private, either make it public or use signed URLs.'
+          throw new Error(`${rlsMessage} Supabase message: ${uploadError.message}`)
         }
-        throw uploadError
+        throw new Error(`Supabase storage upload error: ${uploadError.message || uploadError}`)
       }
 
-      const { data } = supabase.storage
+      if (!uploadData) {
+        throw new Error('Supabase storage upload succeeded but no upload data was returned')
+      }
+
+      const { data: publicUrlData, error: publicUrlError } = supabase.storage
         .from('food-images')
         .getPublicUrl(filePath)
 
-      return data.publicUrl
+      if (publicUrlError) {
+        console.error('[ManageMenu] getPublicUrl error', publicUrlError)
+        throw new Error(`getPublicUrl failed: ${publicUrlError.message}`)
+      }
+
+      const publicUrl = publicUrlData?.publicUrl
+      if (!publicUrl) {
+        throw new Error('getPublicUrl returned empty URL; check if bucket is private or misconfigured')
+      }
+
+      return publicUrl
+    } catch (error) {
+      console.error('[ManageMenu] uploadImage.catch', error)
+      toast.error(`Image upload failed: ${error.message || error}`)
+      throw error
     } finally {
       setUploading(false)
     }
@@ -152,7 +183,8 @@ export default function ManageMenu() {
       setShowModal(false)
       fetchData()
     } catch (err) {
-      toast.error(err.message)
+      console.error('[ManageMenu] handleSave caught', err)
+      toast.error(`Save failed: ${err?.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }

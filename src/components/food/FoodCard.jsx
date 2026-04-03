@@ -9,6 +9,7 @@ import Button from '../ui/Button'
 export default function FoodCard({ food, kitchenId, kitchenName, isPopular }) {
   const { addToCart, kitchenId: cartKitchenId, kitchenName: cartKitchenName } = useCart()
   const [showWarning, setShowWarning] = useState(false)
+  const [imageStatus, setImageStatus] = useState('idle') // idle | loading | loaded | error
 
   const handleAdd = () => {
     if (cartKitchenId && cartKitchenId !== kitchenId) {
@@ -29,12 +30,18 @@ export default function FoodCard({ food, kitchenId, kitchenName, isPopular }) {
     <>
       <div className="glass-card p-0 overflow-hidden hover:scale-[1.02] transition-transform duration-300 group">
         <div className="relative h-40 bg-gradient-to-br from-orange-100 to-amber-50 overflow-hidden">
-          {food.image_url ? (
+          {food.image_url && imageStatus !== 'error' ? (
             <img
               src={food.image_url}
               alt={food.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={e => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-5xl">🍽️</div>' }}
+              onLoad={() => setImageStatus('loaded')}
+              onError={(e) => {
+                console.error('[FoodCard] image load failed', food.image_url, e)
+                setImageStatus('error')
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
